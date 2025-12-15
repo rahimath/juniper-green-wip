@@ -389,15 +389,16 @@
         }
         /* Centrage du modal global et style amélioré */
         #globalRankingModal {
-            /* Anciens styles */
             top: 50% !important; 
-            left: 50% !important; /* Centrage horizontal */
+            left: 50% !important; 
             right: initial !important;
-            transform: translate(-50%, -50%) !important; /* Centrage vertical et horizontal */
-            width: 450px; /* Taille plus grande */
-            max-height: 90vh;
+            transform: translate(-50%, -50%) !important; 
+            width: 80vw; /* Rendre le cadre plus large */
+            max-width: 700px; /* Limite la largeur sur les grands écrans */
+            max-height: 85vh; /* Moins haut */
             padding: 20px;
             border: 1px solid #444;
+            position: fixed; 
         }
 
         #globalRankingModal h3 {
@@ -413,6 +414,34 @@
             display: flex;
             flex-direction: column;
             gap: 12px; /* Espace entre les entrées */
+        }
+        /* Style du bouton Fermer (X) */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+            z-index: 1010;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+        }
+
+        /* Effet de flou sur le body lorsque le modal global est ouvert */
+        body.modal-open-global {
+            /* Ajout du flou sur le contenu du jeu */
+            filter: blur(3px); 
+            transition: filter 0.3s ease;
         }
 
         /* Style de chaque entrée du classement */
@@ -585,7 +614,7 @@
     <button class="global-ranking-btn" onclick="toggleGlobalModal()">🏆 Global</button>
 
     <div id="globalRankingModal" class="modal" style="top: 50%; transform: translateY(-50%); left: 50%;"> 
-        <h3 style="margin-bottom: 15px; text-align: center;">🏆 Classement Global (Cumulé)</h3>
+        <button class="close-btn" onclick="toggleGlobalModal()">X</button> <h3 style="margin-bottom: 15px; text-align: center;">🏆 Classement Global (Cumulé)</h3>
         <ul id="globalRankingList"></ul>
     </div>
 
@@ -758,6 +787,15 @@
             resetSequence();
         }
 
+        // Nouvelle fonction pour fermer tous les modals ouverts par l'overlay
+        function closeAllModals() {
+            document.getElementById("overlay").style.display = "none";
+            document.getElementById("gameOverModal").style.display = "none";
+            document.getElementById("globalRankingModal").style.display = "none";
+            document.body.classList.remove('modal-open-global'); // Retire l'effet de flou/filtre
+            document.getElementById("rankingModal").style.display = "none";
+        }
+
         function copySequence() {
             const sequenceText = selectedNumbersList.join(" - ");
             navigator.clipboard.writeText(sequenceText).then(() => {
@@ -809,20 +847,27 @@
 
         function toggleGlobalModal() {
             const modal = document.getElementById("globalRankingModal");
+            const overlay = document.getElementById("overlay");
             const rankingList = document.getElementById("globalRankingList");
 
             if (modal.style.display === "block") {
-                modal.style.display = "none";
+                // Fermeture : utilise la nouvelle fonction
+                closeAllModals(); 
             } else {
+                // Ouverture
+                
+                // S'assurer que les autres modals sont fermés
+                document.getElementById("rankingModal").style.display = "none";
+                document.getElementById("gameOverModal").style.display = "none";
+
                 rankingList.innerHTML = "";
                 
-                // Remplir la liste avec les éléments <li> que nous avons stockés
-                // Nous clonons les nœuds car une <li> ne peut exister qu'à un seul endroit dans le DOM
+                // Remplir la liste 
                 globalRankingData.forEach(li => rankingList.appendChild(li.cloneNode(true)));
                 
                 modal.style.display = "block";
-                // S'assurer que le modal du classement par version est fermé
-                document.getElementById("rankingModal").style.display = "none";
+                overlay.style.display = "block";
+                document.body.classList.add('modal-open-global'); // Ajout de la classe pour le flou
             }
         }
 
@@ -848,14 +893,14 @@
                     const scoreText = parts[CUMULATIVE_SCORE_INDEX] ? parts[CUMULATIVE_SCORE_INDEX].trim().replace(/"/g, '').replace(',', '.') : ''; 
                     const score = parseFloat(scoreText); 
                     
-                    if (nom && !isNaN(score) && score > 0) {
+                    // CORRECTION CLÉ : on inclut tous les scores numériques (y compris 0)
+                    if (nom && !isNaN(score)) { 
                         extractedData.push({ nom, classe, score });
                     }
                 }
             });
             
             // 1. Triage des données : Assurer que le rang est correct (le plus haut score est 1er)
-            // Le CSV de Sheets devrait déjà être trié, mais un tri dans le code est plus sûr.
             extractedData.sort((a, b) => b.score - a.score);
 
             // 2. Construction des éléments HTML (li)
@@ -863,7 +908,8 @@
             extractedData.forEach((data, index) => {
                 const rang = index + 1;
                 const badge = rang === 1 ? '🏆' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang;
-                const scoreDisplay = data.score.toFixed(1); // Afficher une décimale pour la précision
+                // Affichage du score avec une décimale pour la précision (ex: 1634.5 ou 1030.0)
+                const scoreDisplay = data.score.toFixed(1); 
 
                 let li = document.createElement("li");
                 li.classList.add('ranking-entry');
@@ -1110,9 +1156,19 @@
         // ---- Gestion de la version et sauvegarde ----
         window.addEventListener("DOMContentLoaded", () => {
             const select = document.getElementById("numberCount");
+            const overlay = document.getElementById("overlay"); // Récupérer l'overlay
             
             const savedVersion = localStorage.getItem("gameVersion");
             if (savedVersion && select) select.value = savedVersion;
+            
+            // NOUVEAU : Clic sur l'overlay pour fermer les modals globaux
+            overlay.addEventListener('click', () => {
+                const globalModal = document.getElementById("globalRankingModal");
+                // Si le modal global est ouvert, le ferme
+                if (globalModal.style.display === "block") {
+                    closeAllModals(); 
+                }
+            });
 
             // Démarre le chargement global (appelle generateGrid à la fin)
             loadRankings(); 
