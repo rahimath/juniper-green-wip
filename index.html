@@ -356,7 +356,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Nous gardons l'overlay, mais il est transparent pour ne pas bloquer les clics si non utilisé */
             background: transparent; 
             z-index: 1999;
         }
@@ -752,15 +751,21 @@
             "100": 77
         };
 
-        // --- NOUVEAUX ÉLÉMENTS POUR LE CLASSEMENT GLOBAL (Définitions) ---
+        // --- CLASSEMENT GLOBAL (Définitions) ---
         const GLOBAL_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT1neNKra59CewHg8kRJvnUNNiGW5_pat_SZF4_5xmhgpxn1st0A-Sk9mIUXu5YpRFVKcgf-E7eT47H/pub?gid=1245136924&single=true&output=csv';
         let globalRankingData = [];
 
         // Indices des colonnes (A=0, B=1)
         const NAME_INDEX = 0; 
         const CLASS_INDEX = 1;
-        // CORRECTION CLÉ: Index 15 = Colonne P (selon confirmation utilisateur)
+        // Index 15 = Colonne P (selon votre confirmation)
         const CUMULATIVE_SCORE_INDEX = 15;
+
+        // REGEX pour extraire la colonne 15 :
+        // Cherche le contenu de la 16e colonne (index 15) en considérant les guillemets et les virgules comme séparateurs.
+        // La colonne 16 est précédée de 15 paires de "contenu, " ou de 15 "contenu" non guillemetté.
+        const COLUMN_15_REGEX = /^(?:(?:"[^"]*"|[^,]*),){15}("[^"]*"|[^,]*)/;
+
 
         const grid = document.getElementById("grid");
         const selectedNumbersDisplay = document.getElementById("selectedNumbers");
@@ -783,7 +788,6 @@
             resetSequence();
         }
 
-        // Fonction simplifiée pour fermer les modals
         function closeAllModals() {
             document.getElementById("overlay").style.display = "none";
             document.getElementById("globalRankingModal").style.display = "none";
@@ -841,26 +845,19 @@
 
         function toggleGlobalModal() {
             const modal = document.getElementById("globalRankingModal");
-            const overlay = document.getElementById("overlay");
             const rankingList = document.getElementById("globalRankingList");
 
             if (modal.style.display === "block") {
-                // Fermeture 
                 closeAllModals(); 
             } else {
-                // Ouverture
-                
-                // S'assurer que les autres modals sont fermés
                 document.getElementById("rankingModal").style.display = "none";
                 document.getElementById("gameOverModal").style.display = "none";
 
                 rankingList.innerHTML = "";
                 
-                // Remplir la liste 
                 globalRankingData.forEach(li => rankingList.appendChild(li.cloneNode(true)));
                 
                 modal.style.display = "block";
-                // L'overlay n'est pas affiché pour le classement global pour ne pas bloquer le défilement
             }
         }
 
@@ -872,35 +869,38 @@
             dataLines.forEach((line, index) => {
                 const parts = line.split(',');
                 
-                if (parts.length > CUMULATIVE_SCORE_INDEX) {
-                    
-                    const nom = parts[NAME_INDEX] ? parts[NAME_INDEX].trim().replace(/"/g, '') : '';
-                    let classe = parts[CLASS_INDEX] ? parts[CLASS_INDEX].trim().replace(/"/g, '') : '';
-                    
-                    if (classe === '') {
-                        classe = 'Professeur'; 
-                    }
+                // On utilise la méthode classique pour les premières colonnes simples (Nom, Classe)
+                const nom = parts[NAME_INDEX] ? parts[NAME_INDEX].trim().replace(/"/g, '') : '';
+                let classe = parts[CLASS_INDEX] ? parts[CLASS_INDEX].trim().replace(/"/g, '') : '';
+                
+                if (classe === '') {
+                    classe = 'Professeur'; 
+                }
 
-                    // Nettoyage robuste pour les décimales et les guillemets
-                    const scoreTextRaw = parts[CUMULATIVE_SCORE_INDEX] || '';
-                    
-                    // 1. Enlève les guillemets et les espaces
-                    let scoreTextClean = scoreTextRaw.trim().replace(/"/g, '');
-                    
-                    // 2. Remplace la virgule par le point pour le parsing JavaScript
-                    // Ce qui était 1030,5 devient 1030.5
-                    scoreTextClean = scoreTextClean.replace(',', '.'); 
-                    
-                    const score = parseFloat(scoreTextClean); 
-                    
-                    // Si vous avez toujours un problème de score, décommentez la ligne suivante
-                    // pour voir ce que JavaScript essaie de parser (et partagez le résultat) :
-                    console.log(`DEBUG Ligne ${index + 1}: Nom='${nom}', Colonne P lue: '${scoreTextRaw}'. Score nettoyé: '${scoreTextClean}'. Score Parsé: ${score}.`);
-                    
-                    // Inclut tous les scores numériques valides
-                    if (nom && !isNaN(score)) { 
-                        extractedData.push({ nom, classe, score });
-                    }
+                // --- NOUVEAU TRAITEMENT POUR LA COLONNE DE SCORE (INDEX 15 / COLONNE P) ---
+                let scoreTextRaw = '';
+                const match = line.match(COLUMN_15_REGEX);
+                
+                if (match && match[1]) {
+                    scoreTextRaw = match[1].trim();
+                } else {
+                    // Si la regex échoue (pour les lignes courtes ou format inhabituel), on utilise l'indexage simple
+                    scoreTextRaw = parts[CUMULATIVE_SCORE_INDEX] || '';
+                }
+
+                // 1. Enlève tous les guillemets et les espaces
+                let scoreTextClean = scoreTextRaw.replace(/"/g, '').trim();
+                
+                // 2. Remplace la virgule décimale par le point décimal pour JavaScript
+                scoreTextClean = scoreTextClean.replace(',', '.'); 
+                
+                const score = parseFloat(scoreTextClean); 
+                
+                // DEBUG : Affiche le score lu et nettoyé pour vérification
+                // console.log(`DEBUG Ligne ${index + 1}: Nom='${nom}'. Raw: '${scoreTextRaw}'. Clean: '${scoreTextClean}'. Parsé: ${score}.`);
+                
+                if (nom && !isNaN(score) && score !== 0) { // On ignore les scores à 0
+                    extractedData.push({ nom, classe, score });
                 }
             });
             
@@ -914,7 +914,7 @@
                 const badge = rang === 1 ? '🏆' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang;
                 
                 const scoreValue = data.score;
-                // FIX AFFICHAGE: Affiche l'entier si la décimale est .0, sinon affiche avec une décimale
+                // AFFICHAGE : Affiche un chiffre après la virgule si nécessaire, sinon affiche l'entier.
                 const scoreDisplay = scoreValue % 1 === 0 ? scoreValue.toFixed(0) : scoreValue.toFixed(1); 
 
                 let li = document.createElement("li");
@@ -947,9 +947,7 @@
             return list;
         }
 
-        // Modification de loadRankings pour inclure le classement global
         async function loadRankings() {
-            // Chargement du classement global
             try {
                 const response = await fetch(GLOBAL_CSV_URL);
                 
@@ -958,13 +956,12 @@
                 }
                 
                 const csvText = await response.text();
-                
                 globalRankingData = parseGlobalCSV(csvText); 
                 
             } catch (error) {
                 console.error("Erreur critique de chargement/parsing du classement global :", error);
                 let li = document.createElement("li");
-                li.textContent = "Erreur de chargement du classement. (Vérifiez votre connexion/l'URL de publication)";
+                li.textContent = "Erreur de chargement du classement. (Vérifiez la publication Sheets)";
                 globalRankingData = [li];
             }
             generateGrid();
@@ -1027,7 +1024,6 @@
                 selectedNumbersDisplay.style.display = "block";
                 counter.textContent = selectedNumbersList.length;
 
-                // Animation lueur du compteur
                 counter.classList.add('glow');
                 setTimeout(() => {
                     counter.classList.remove('glow');
@@ -1101,7 +1097,6 @@
                     overlay.style.display = "block";
                     modal.style.display = "block";
 
-                    // Animation lueur du score après un court délai
                     setTimeout(() => {
                         modalScore.classList.add('glow');
                         setTimeout(() => {
@@ -1119,7 +1114,6 @@
             (function frame() {
                 const timeLeft = animationEnd - Date.now();
 
-                // Génère 20 confettis par frame
                 for (let i = 0; i < 20; i++) {
                     const confetti = document.createElement("div");
                     confetti.className = "confetti";
@@ -1136,7 +1130,6 @@
 
                     document.body.appendChild(confetti);
 
-                    // Animation
                     const fall = (Math.random() * 1) + 0.5;
                     confetti.animate([
                         { transform: `translateY(0) rotate(${rotate}deg)` },
@@ -1153,16 +1146,12 @@
             })();
         }
 
-        // ---- Gestion de la version et sauvegarde ----
         window.addEventListener("DOMContentLoaded", () => {
             const select = document.getElementById("numberCount");
             
             const savedVersion = localStorage.getItem("gameVersion");
             if (savedVersion && select) select.value = savedVersion;
             
-            // L'écouteur d'événement pour l'overlay est retiré, car l'overlay n'assombrit plus.
-
-            // Démarre le chargement global (appelle generateGrid à la fin)
             loadRankings(); 
             
             select.addEventListener("change", (e) => {
