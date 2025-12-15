@@ -757,7 +757,7 @@
         // Indices des colonnes (A=0, B=1, P=15)
         const NAME_INDEX = 0; 
         const CLASS_INDEX = 1;
-        const CUMULATIVE_SCORE_INDEX = 13;
+        const CUMULATIVE_SCORE_INDEX = 15;
 
         const grid = document.getElementById("grid");
         const selectedNumbersDisplay = document.getElementById("selectedNumbers");
@@ -833,7 +833,6 @@
                     li.textContent = "Pas de classement disponible.";
                     rankingList.appendChild(li);
                 }
-                modal.style.display = "block";
             }
         }
 
@@ -1147,15 +1146,6 @@
             
             const savedVersion = localStorage.getItem("gameVersion");
             if (savedVersion && select) select.value = savedVersion;
-            
-            // NOUVEAU : Clic sur l'overlay pour fermer les modals globaux
-            overlay.addEventListener('click', () => {
-                const globalModal = document.getElementById("globalRankingModal");
-                // Si le modal global est ouvert, le ferme
-                if (globalModal.style.display === "block") {
-                    closeAllModals(); 
-                }
-            });
 
             // Démarre le chargement global (appelle generateGrid à la fin)
             loadRankings(); 
