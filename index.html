@@ -393,12 +393,13 @@
             left: 50% !important; 
             right: initial !important;
             transform: translate(-50%, -50%) !important; 
-            width: 80vw; /* Rendre le cadre plus large */
-            max-width: 700px; /* Limite la largeur sur les grands écrans */
+            width: 80vw;
+            max-width: 900px; /* Taille plus large */
             max-height: 85vh; /* Moins haut */
             padding: 20px;
             border: 1px solid #444;
             position: fixed; 
+            z-index: 2000; /* Assure qu'il est au-dessus du jeu */
         }
 
         #globalRankingModal h3 {
@@ -423,12 +424,12 @@
             background: none;
             border: none;
             color: white;
-            font-size: 20px;
+            font-size: 30px; /* Plus grand */
             font-weight: bold;
             cursor: pointer;
-            padding: 5px;
+            padding: 5px 10px;
             line-height: 1;
-            z-index: 1010;
+            z-index: 2001;
             opacity: 0.6;
             transition: opacity 0.2s;
         }
@@ -531,8 +532,7 @@
         }
     </style>
 
-    <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-3N5SVBSN6Q"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3N5SVBSN6Q"></script>
         <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
@@ -754,9 +754,10 @@
         const GLOBAL_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT1neNKra59CewHg8kRJvnUNNiGW5_pat_SZF4_5xmhgpxn1st0A-Sk9mIUXu5YpRFVKcgf-E7eT47H/pub?gid=1245136924&single=true&output=csv';
         let globalRankingData = [];
 
-        // Indices des colonnes (A=0, B=1, P=15)
+        // Indices des colonnes (A=0, B=1)
         const NAME_INDEX = 0; 
         const CLASS_INDEX = 1;
+        // CORRECTION CLÉ: Index 13 = Colonne N (Total/Score cumulé)
         const CUMULATIVE_SCORE_INDEX = 15;
 
         const grid = document.getElementById("grid");
@@ -780,10 +781,9 @@
             resetSequence();
         }
 
-        // Nouvelle fonction pour fermer tous les modals ouverts par l'overlay
+        // Fonction simplifiée pour fermer les modals
         function closeAllModals() {
             document.getElementById("overlay").style.display = "none";
-            // document.getElementById("gameOverModal").style.display = "none"; // Optionnel si vous ne voulez fermer que le classement global
             document.getElementById("globalRankingModal").style.display = "none";
             document.getElementById("rankingModal").style.display = "none";
         }
@@ -833,6 +833,7 @@
                     li.textContent = "Pas de classement disponible.";
                     rankingList.appendChild(li);
                 }
+                modal.style.display = "block";
             }
         }
 
@@ -857,13 +858,10 @@
                 globalRankingData.forEach(li => rankingList.appendChild(li.cloneNode(true)));
                 
                 modal.style.display = "block";
-                overlay.style.display = "block";
+                // L'overlay n'est affiché QUE par le gameOverModal, plus ici.
             }
         }
 
-        // La fonction de triage est correcte, nous ne modifions que la partie affichage.
-
-        // Remplacez la fonction parseGlobalCSV par celle-ci:
         function parseGlobalCSV(csv) {
             const lines = csv.split('\n').filter(line => line.trim() !== '');
             const dataLines = lines.slice(1); 
@@ -881,10 +879,11 @@
                         classe = 'Professeur'; 
                     }
 
-                    // Assurez-vous d'avoir bien fait la modification dans Sheets (point à la place de la virgule)
+                    // Nettoyage : remplace la virgule par le point pour le parsing JavaScript
                     const scoreText = parts[CUMULATIVE_SCORE_INDEX] ? parts[CUMULATIVE_SCORE_INDEX].trim().replace(/"/g, '').replace(',', '.') : ''; 
                     const score = parseFloat(scoreText); 
                     
+                    // Inclut tous les scores numériques valides
                     if (nom && !isNaN(score)) { 
                         extractedData.push({ nom, classe, score });
                     }
@@ -900,8 +899,9 @@
                 const rang = index + 1;
                 const badge = rang === 1 ? '🏆' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang;
                 
-                // FIX AFFICHAGE: Utilise toFixed(1) pour garantir une décimale
-                const scoreDisplay = data.score.toFixed(1); 
+                const scoreValue = data.score;
+                // CORRECTION AFFICHAGE: Affiche l'entier si la décimale est .0, sinon affiche avec une décimale
+                const scoreDisplay = scoreValue % 1 === 0 ? scoreValue.toFixed(0) : scoreValue.toFixed(1); 
 
                 let li = document.createElement("li");
                 li.classList.add('ranking-entry');
@@ -920,7 +920,13 @@
                         </div>
                     </div>
                 `;
-                // ... (reste du code) ...
+                if (rang <= 3) {
+                    li.classList.add('top-three');
+                }
+                if (data.classe === 'Professeur') {
+                    li.classList.add('teacher-entry');
+                }
+
                 list.push(li);
             });
 
@@ -1142,10 +1148,13 @@
         // ---- Gestion de la version et sauvegarde ----
         window.addEventListener("DOMContentLoaded", () => {
             const select = document.getElementById("numberCount");
-            const overlay = document.getElementById("overlay"); // Récupérer l'overlay
+            const overlay = document.getElementById("overlay");
             
             const savedVersion = localStorage.getItem("gameVersion");
             if (savedVersion && select) select.value = savedVersion;
+            
+            // L'overlay n'est plus utilisé pour la fermeture du classement global,
+            // donc nous retirons l'écouteur d'événement au clic.
 
             // Démarre le chargement global (appelle generateGrid à la fin)
             loadRankings(); 
