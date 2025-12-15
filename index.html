@@ -387,16 +387,125 @@
             background-color: #EBC144;
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
         }
-        /* Style pour positionner le modal Global à droite */
+        /* Centrage du modal global et style amélioré */
         #globalRankingModal {
-            left: initial !important; 
-            right: 20px;
-            width: 350px; /* Peut-être un peu plus large pour le global */
+            /* Anciens styles */
+            top: 50% !important; 
+            left: 50% !important; /* Centrage horizontal */
+            right: initial !important;
+            transform: translate(-50%, -50%) !important; /* Centrage vertical et horizontal */
+            width: 450px; /* Taille plus grande */
+            max-height: 90vh;
+            padding: 20px;
+            border: 1px solid #444;
         }
+
         #globalRankingModal h3 {
-            margin-bottom: 15px;
-            text-align: center;
+            font-size: 26px;
+            margin-bottom: 25px !important;
             color: #D4AF37;
+            text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+        }
+
+        #globalRankingModal ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* Espace entre les entrées */
+        }
+
+        /* Style de chaque entrée du classement */
+        .ranking-entry {
+            display: flex !important;
+            justify-content: flex-start !important; /* Alignement à gauche */
+            align-items: center;
+            background-color: #2b2b2b;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .ranking-entry:hover {
+            background-color: #333;
+            transform: translateY(-2px);
+        }
+
+        .rank-badge {
+            font-size: 22px;
+            font-weight: bold;
+            min-width: 40px; /* Espace pour le badge/rang */
+            text-align: center;
+            color: #ccc;
+        }
+
+        .info-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-grow: 1;
+            margin-left: 15px;
+        }
+
+        .name-class {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .rank-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .rank-class {
+            font-size: 14px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .rank-score {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .score-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #69F0AE; /* Couleur vive pour les scores */
+        }
+
+        .score-unit {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* Styles spéciaux pour le Top 3 */
+        .ranking-entry.top-three {
+            background: linear-gradient(90deg, #3a3a3a, #443c2c);
+            border: 1px solid #D4AF37;
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+        }
+
+        .ranking-entry.top-three .rank-badge {
+            font-size: 28px;
+        }
+
+        .ranking-entry.top-three .score-value {
+            color: #FFEB3B; /* Or pour le score du Top 3 */
+        }
+
+        /* Style pour Mme Butin (Professeur) */
+        .ranking-entry.teacher-entry {
+            opacity: 0.7;
+            font-style: italic;
+            background-color: #383838;
+        }
+
+        .ranking-entry.teacher-entry .score-value {
+            color: #81D4FA; /* Bleu pour les professeurs, par exemple */
         }
     </style>
 
@@ -475,8 +584,8 @@
 
     <button class="global-ranking-btn" onclick="toggleGlobalModal()">🏆 Global</button>
 
-    <div id="globalRankingModal" class="modal" style="top: 50%; transform: translateY(-50%); left: initial; right: 20px;">
-        <h3>🏆 Classement Global (Cumulé)</h3>
+    <div id="globalRankingModal" class="modal" style="top: 50%; transform: translateY(-50%); left: 50%;"> 
+        <h3 style="margin-bottom: 15px; text-align: center;">🏆 Classement Global (Cumulé)</h3>
         <ul id="globalRankingList"></ul>
     </div>
 
@@ -719,53 +828,70 @@
 
         function parseGlobalCSV(csv) {
             const lines = csv.split('\n').filter(line => line.trim() !== '');
-            const list = [];
-            
-            // On saute la première ligne (l'en-tête du tableau)
             const dataLines = lines.slice(1); 
+            const extractedData = [];
             
-            console.log("Total de lignes CSV à analyser (après en-tête):", dataLines.length);
-            
-            if (dataLines.length === 0) {
-                 let li = document.createElement("li");
-                 li.textContent = "Le fichier de classement est vide ou contient uniquement l'en-tête.";
-                 list.push(li);
-                 return list;
-            }
-
-            dataLines.forEach((line, index) => {
-                // SOLUTION: On utilise split(',') pour séparer les colonnes
+            dataLines.forEach((line) => {
                 const parts = line.split(',');
                 
-                // Vérifier si la ligne est assez longue et si les colonnes critiques existent
-                // Nous vérifions si nous avons au moins 16 parties (index 15)
-                if (parts.length > SCORE_INDEX) {
+                if (parts.length > CUMULATIVE_SCORE_INDEX) {
                     
-                    // 1. Nettoyage et extraction des données
                     const nom = parts[NAME_INDEX] ? parts[NAME_INDEX].trim().replace(/"/g, '') : '';
-                    const classe = parts[CLASS_INDEX] ? parts[CLASS_INDEX].trim().replace(/"/g, '') : '';
-                    // Le score peut être une chaîne comme "1565,6", il faut la nettoyer avant de la parser
-                    const scoreText = parts[SCORE_INDEX] ? parts[SCORE_INDEX].trim().replace(/"/g, '').replace(',', '.') : ''; 
-                    const score = parseFloat(scoreText); // Utilisation de parseFloat pour les décimaux
+                    let classe = parts[CLASS_INDEX] ? parts[CLASS_INDEX].trim().replace(/"/g, '') : '';
                     
-                    // console.log(`Debug Ligne ${index + 1}: Nom='${nom}', ScoreText='${scoreText}', Score=${score}`);
+                    // Si la classe est vide (comme pour Mme Butin), on met "Professeur"
+                    if (classe === '') {
+                        classe = 'Professeur'; 
+                    }
+
+                    // On prend la colonne 13 (Total)
+                    const scoreText = parts[CUMULATIVE_SCORE_INDEX] ? parts[CUMULATIVE_SCORE_INDEX].trim().replace(/"/g, '').replace(',', '.') : ''; 
+                    const score = parseFloat(scoreText); 
                     
-                    // 2. Vérification de la validité
                     if (nom && !isNaN(score) && score > 0) {
-                        let li = document.createElement("li");
-                        // Affichage du score sans les décimales si possible, sinon avec une décimale
-                        const scoreDisplay = score % 1 === 0 ? score.toString() : score.toFixed(1);
-                        
-                        li.innerHTML = `${index + 1}. ${nom} (${classe}) <span>${scoreDisplay}</span>`;
-                        
-                        if (index < 3) {
-                            li.classList.add('gold-score');
-                        }
-                        list.push(li);
+                        extractedData.push({ nom, classe, score });
                     }
                 }
             });
-            console.log("Nombre d'éléments de classement global traités:", list.length);
+            
+            // 1. Triage des données : Assurer que le rang est correct (le plus haut score est 1er)
+            // Le CSV de Sheets devrait déjà être trié, mais un tri dans le code est plus sûr.
+            extractedData.sort((a, b) => b.score - a.score);
+
+            // 2. Construction des éléments HTML (li)
+            const list = [];
+            extractedData.forEach((data, index) => {
+                const rang = index + 1;
+                const badge = rang === 1 ? '🏆' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang;
+                const scoreDisplay = data.score.toFixed(1); // Afficher une décimale pour la précision
+
+                let li = document.createElement("li");
+                li.classList.add('ranking-entry');
+                li.setAttribute('data-rank', rang);
+                
+                li.innerHTML = `
+                    <div class="rank-badge">${badge}</div>
+                    <div class="info-group">
+                        <div class="name-class">
+                            <span class="rank-name">${data.nom}</span>
+                            <span class="rank-class">${data.classe}</span>
+                        </div>
+                        <div class="rank-score">
+                            <span class="score-value">${scoreDisplay}</span>
+                            <span class="score-unit">points</span>
+                        </div>
+                    </div>
+                `;
+                if (rang <= 3) {
+                    li.classList.add('top-three');
+                }
+                if (data.classe === 'Professeur') {
+                    li.classList.add('teacher-entry');
+                }
+
+                list.push(li);
+            });
+
             return list;
         }
 
