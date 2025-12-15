@@ -356,7 +356,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            /* Nous gardons l'overlay, mais il est transparent pour ne pas bloquer les clics si non utilisé */
+            background: transparent; 
             z-index: 1999;
         }
         .confetti {
@@ -400,6 +401,7 @@
             border: 1px solid #444;
             position: fixed; 
             z-index: 2000; /* Assure qu'il est au-dessus du jeu */
+            overflow-y: auto; /* Permet le défilement dans le modal */
         }
 
         #globalRankingModal h3 {
@@ -757,7 +759,7 @@
         // Indices des colonnes (A=0, B=1)
         const NAME_INDEX = 0; 
         const CLASS_INDEX = 1;
-        // CORRECTION CLÉ: Index 13 = Colonne N (Total/Score cumulé)
+        // CORRECTION CLÉ: Index 15 = Colonne P (selon confirmation utilisateur)
         const CUMULATIVE_SCORE_INDEX = 15;
 
         const grid = document.getElementById("grid");
@@ -858,7 +860,7 @@
                 globalRankingData.forEach(li => rankingList.appendChild(li.cloneNode(true)));
                 
                 modal.style.display = "block";
-                // L'overlay n'est affiché QUE par le gameOverModal, plus ici.
+                // L'overlay n'est pas affiché pour le classement global pour ne pas bloquer le défilement
             }
         }
 
@@ -867,7 +869,7 @@
             const dataLines = lines.slice(1); 
             const extractedData = [];
             
-            dataLines.forEach((line) => {
+            dataLines.forEach((line, index) => {
                 const parts = line.split(',');
                 
                 if (parts.length > CUMULATIVE_SCORE_INDEX) {
@@ -879,9 +881,21 @@
                         classe = 'Professeur'; 
                     }
 
-                    // Nettoyage : remplace la virgule par le point pour le parsing JavaScript
-                    const scoreText = parts[CUMULATIVE_SCORE_INDEX] ? parts[CUMULATIVE_SCORE_INDEX].trim().replace(/"/g, '').replace(',', '.') : ''; 
-                    const score = parseFloat(scoreText); 
+                    // Nettoyage robuste pour les décimales et les guillemets
+                    const scoreTextRaw = parts[CUMULATIVE_SCORE_INDEX] || '';
+                    
+                    // 1. Enlève les guillemets et les espaces
+                    let scoreTextClean = scoreTextRaw.trim().replace(/"/g, '');
+                    
+                    // 2. Remplace la virgule par le point pour le parsing JavaScript
+                    // Ce qui était 1030,5 devient 1030.5
+                    scoreTextClean = scoreTextClean.replace(',', '.'); 
+                    
+                    const score = parseFloat(scoreTextClean); 
+                    
+                    // Si vous avez toujours un problème de score, décommentez la ligne suivante
+                    // pour voir ce que JavaScript essaie de parser (et partagez le résultat) :
+                    // console.log(`DEBUG Ligne ${index + 1}: Nom='${nom}', Colonne P lue: '${scoreTextRaw}'. Score nettoyé: '${scoreTextClean}'. Score Parsé: ${score}.`);
                     
                     // Inclut tous les scores numériques valides
                     if (nom && !isNaN(score)) { 
@@ -900,7 +914,7 @@
                 const badge = rang === 1 ? '🏆' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang;
                 
                 const scoreValue = data.score;
-                // CORRECTION AFFICHAGE: Affiche l'entier si la décimale est .0, sinon affiche avec une décimale
+                // FIX AFFICHAGE: Affiche l'entier si la décimale est .0, sinon affiche avec une décimale
                 const scoreDisplay = scoreValue % 1 === 0 ? scoreValue.toFixed(0) : scoreValue.toFixed(1); 
 
                 let li = document.createElement("li");
@@ -935,30 +949,24 @@
 
         // Modification de loadRankings pour inclure le classement global
         async function loadRankings() {
-            console.log("Tentative de chargement du classement global...");
             // Chargement du classement global
             try {
                 const response = await fetch(GLOBAL_CSV_URL);
                 
                 if (!response.ok) {
-                     // Si la requête échoue pour une raison HTTP (404, 500, etc.)
                      throw new Error(`Erreur HTTP lors du chargement: ${response.status}`);
                 }
                 
                 const csvText = await response.text();
-                // Afficher les 300 premiers caractères du CSV pour vérifier qu'il est chargé
-                console.log("CSV brut chargé (extrait):", csvText.substring(0, 300) + '...');
                 
-                // Stockage des éléments <li> générés par l'analyse
                 globalRankingData = parseGlobalCSV(csvText); 
                 
             } catch (error) {
                 console.error("Erreur critique de chargement/parsing du classement global :", error);
                 let li = document.createElement("li");
-                li.textContent = "Erreur de chargement du classement. (Problème de réseau, voir console)";
+                li.textContent = "Erreur de chargement du classement. (Vérifiez votre connexion/l'URL de publication)";
                 globalRankingData = [li];
             }
-            // Assurez-vous d'appeler generateGrid ici
             generateGrid();
         }
 
@@ -1036,8 +1044,8 @@
                 if (lastCell) {
                     lastCell.classList.remove("selected", "disabled");
                 }
-                availableNumbers.add(lastNum);
                 selectedNumber = selectedNumbersList.length > 0 ? selectedNumbersList[selectedNumbersList.length - 1] : null;
+                availableNumbers.add(lastNum);
                 selectedNumbersDisplay.textContent = selectedNumbersList.join(" - ");
                 counter.textContent = selectedNumbersList.length;
                 if (selectedNumbersList.length === 0) {
@@ -1148,13 +1156,11 @@
         // ---- Gestion de la version et sauvegarde ----
         window.addEventListener("DOMContentLoaded", () => {
             const select = document.getElementById("numberCount");
-            const overlay = document.getElementById("overlay");
             
             const savedVersion = localStorage.getItem("gameVersion");
             if (savedVersion && select) select.value = savedVersion;
             
-            // L'overlay n'est plus utilisé pour la fermeture du classement global,
-            // donc nous retirons l'écouteur d'événement au clic.
+            // L'écouteur d'événement pour l'overlay est retiré, car l'overlay n'assombrit plus.
 
             // Démarre le chargement global (appelle generateGrid à la fin)
             loadRankings(); 
