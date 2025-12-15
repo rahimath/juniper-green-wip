@@ -717,18 +717,33 @@
 
         // Nouvelle fonction pour analyser le CSV global
         function parseGlobalCSV(csv) {
-            const lines = csv.split('\n').filter(line => line.trim() !== '').slice(1); // Enlever les lignes vides et l'en-tête (ligne 1)
+            const lines = csv.split('\n').filter(line => line.trim() !== '');
             const list = [];
             
-            lines.forEach((line, index) => {
+            // Si la première ligne est un en-tête, nous la sautons.
+            // Sinon, nous commençons à l'index 0. 
+            // Nous allons supposer que la première ligne est l'en-tête et la sauter (slice(1)).
+            const dataLines = lines.slice(1); 
+            
+            if (dataLines.length === 0) {
+                 let li = document.createElement("li");
+                 li.textContent = "Le fichier de classement est vide ou contient uniquement l'en-tête.";
+                 list.push(li);
+                 return list;
+            }
+
+            dataLines.forEach((line, index) => {
                 // Utiliser une expression régulière pour gérer les séparateurs à l'intérieur des guillemets
                 const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
                 
-                if (parts.length > SCORE_INDEX) {
+                // Vérifier si la ligne est assez longue et si les colonnes critiques existent
+                if (parts.length > SCORE_INDEX && parts[NAME_INDEX].trim() !== '') {
+                    
                     const nom = parts[NAME_INDEX].trim().replace(/"/g, '');
                     const classe = parts[CLASS_INDEX].trim().replace(/"/g, '');
                     const score = parseInt(parts[SCORE_INDEX].trim(), 10);
                     
+                    // On ne retient que les lignes avec un nom et un score valide
                     if (nom && !isNaN(score)) {
                         // Rang = index + 1 (puisque le sheet est classé)
                         let li = document.createElement("li");
@@ -752,14 +767,16 @@
             try {
                 const response = await fetch(GLOBAL_CSV_URL);
                 const csvText = await response.text();
+                
+                // Stockage des éléments <li> générés par l'analyse
                 globalRankingData = parseGlobalCSV(csvText); 
             } catch (error) {
                 console.error("Erreur de chargement du classement global :", error);
                 let li = document.createElement("li");
-                li.textContent = "Erreur de chargement du classement. Veuillez réessayer.";
+                li.textContent = "Erreur de chargement du classement. (Problème de réseau ou URL)";
                 globalRankingData = [li];
             }
-            // Le reste de votre logique de démarrage peut rester ici si besoin (ex: generateGrid())
+            // Le reste de votre logique de démarrage peut rester ici si besoin
             generateGrid();
         }
 
@@ -953,8 +970,9 @@
             const savedVersion = localStorage.getItem("gameVersion");
             if (savedVersion && select) select.value = savedVersion;
 
-            loadRankings();
-
+            // Démarre le chargement global (appelle generateGrid à la fin)
+            loadRankings(); 
+            
             select.addEventListener("change", (e) => {
                 const version = e.target.value;
                 localStorage.setItem("gameVersion", version);
