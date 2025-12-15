@@ -437,13 +437,6 @@
             opacity: 1;
         }
 
-        /* Effet de flou sur le body lorsque le modal global est ouvert */
-        body.modal-open-global {
-            /* Ajout du flou sur le contenu du jeu */
-            filter: blur(3px); 
-            transition: filter 0.3s ease;
-        }
-
         /* Style de chaque entrée du classement */
         .ranking-entry {
             display: flex !important;
@@ -790,9 +783,8 @@
         // Nouvelle fonction pour fermer tous les modals ouverts par l'overlay
         function closeAllModals() {
             document.getElementById("overlay").style.display = "none";
-            document.getElementById("gameOverModal").style.display = "none";
+            // document.getElementById("gameOverModal").style.display = "none"; // Optionnel si vous ne voulez fermer que le classement global
             document.getElementById("globalRankingModal").style.display = "none";
-            document.body.classList.remove('modal-open-global'); // Retire l'effet de flou/filtre
             document.getElementById("rankingModal").style.display = "none";
         }
 
@@ -851,7 +843,7 @@
             const rankingList = document.getElementById("globalRankingList");
 
             if (modal.style.display === "block") {
-                // Fermeture : utilise la nouvelle fonction
+                // Fermeture 
                 closeAllModals(); 
             } else {
                 // Ouverture
@@ -867,10 +859,12 @@
                 
                 modal.style.display = "block";
                 overlay.style.display = "block";
-                document.body.classList.add('modal-open-global'); // Ajout de la classe pour le flou
             }
         }
 
+        // La fonction de triage est correcte, nous ne modifions que la partie affichage.
+
+        // Remplacez la fonction parseGlobalCSV par celle-ci:
         function parseGlobalCSV(csv) {
             const lines = csv.split('\n').filter(line => line.trim() !== '');
             const dataLines = lines.slice(1); 
@@ -888,11 +882,10 @@
                         classe = 'Professeur'; 
                     }
 
+                    // Assurez-vous d'avoir bien fait la modification dans Sheets (point à la place de la virgule)
                     const scoreText = parts[CUMULATIVE_SCORE_INDEX] ? parts[CUMULATIVE_SCORE_INDEX].trim().replace(/"/g, '').replace(',', '.') : ''; 
                     const score = parseFloat(scoreText); 
                     
-                    // NOUVEAU FIX: On vérifie juste si c'est un nom et si le score est un nombre. 
-                    // Si nom existe ET le score est un nombre (y compris 0, 100.0, etc.)
                     if (nom && !isNaN(score)) { 
                         extractedData.push({ nom, classe, score });
                     }
@@ -907,7 +900,8 @@
             extractedData.forEach((data, index) => {
                 const rang = index + 1;
                 const badge = rang === 1 ? '🏆' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang;
-                // Affichage du score avec une décimale pour une précision constante
+                
+                // FIX AFFICHAGE: Utilise toFixed(1) pour garantir une décimale
                 const scoreDisplay = data.score.toFixed(1); 
 
                 let li = document.createElement("li");
@@ -927,14 +921,7 @@
                         </div>
                     </div>
                 `;
-                // ... (le reste du style est géré par le CSS)
-                if (rang <= 3) {
-                    li.classList.add('top-three');
-                }
-                if (data.classe === 'Professeur') {
-                    li.classList.add('teacher-entry');
-                }
-
+                // ... (reste du code) ...
                 list.push(li);
             });
 
