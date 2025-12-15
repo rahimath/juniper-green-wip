@@ -762,8 +762,6 @@
         const CUMULATIVE_SCORE_INDEX = 15;
 
         // REGEX pour extraire la colonne 15 :
-        // Cherche le contenu de la 16e colonne (index 15) en considérant les guillemets et les virgules comme séparateurs.
-        // La colonne 16 est précédée de 15 paires de "contenu, " ou de 15 "contenu" non guillemetté.
         const COLUMN_15_REGEX = /^(?:(?:"[^"]*"|[^,]*),){15}("[^"]*"|[^,]*)/;
 
 
@@ -869,7 +867,6 @@
             dataLines.forEach((line, index) => {
                 const parts = line.split(',');
                 
-                // On utilise la méthode classique pour les premières colonnes simples (Nom, Classe)
                 const nom = parts[NAME_INDEX] ? parts[NAME_INDEX].trim().replace(/"/g, '') : '';
                 let classe = parts[CLASS_INDEX] ? parts[CLASS_INDEX].trim().replace(/"/g, '') : '';
                 
@@ -884,19 +881,25 @@
                 if (match && match[1]) {
                     scoreTextRaw = match[1].trim();
                 } else {
-                    // Si la regex échoue (pour les lignes courtes ou format inhabituel), on utilise l'indexage simple
                     scoreTextRaw = parts[CUMULATIVE_SCORE_INDEX] || '';
                 }
 
-                // 1. Enlève tous les guillemets et les espaces
+                // 1. Enlève tous les guillemets.
                 let scoreTextClean = scoreTextRaw.replace(/"/g, '').trim();
                 
-                // 2. Remplace la virgule décimale par le point décimal pour JavaScript
-                scoreTextClean = scoreTextClean.replace(',', '.'); 
+                // 2. Protège la virgule décimale en la remplaçant par un jeton temporaire.
+                scoreTextClean = scoreTextClean.replace(',', 'DECIMAL_POINT_PLACEHOLDER');
+                
+                // 3. Supprime tous les points et espaces (séparateurs de milliers potentiels : 1.030 ou 1 030).
+                scoreTextClean = scoreTextClean.replace(/\./g, ''); 
+                scoreTextClean = scoreTextClean.replace(/\s/g, ''); 
+                
+                // 4. Rétablit le point décimal pour que parseFloat fonctionne.
+                scoreTextClean = scoreTextClean.replace('DECIMAL_POINT_PLACEHOLDER', '.');
                 
                 const score = parseFloat(scoreTextClean); 
                 
-                // DEBUG : Affiche le score lu et nettoyé pour vérification
+                // Décommentez la ligne ci-dessous si le problème persiste pour voir le résultat du parsing :
                 // console.log(`DEBUG Ligne ${index + 1}: Nom='${nom}'. Raw: '${scoreTextRaw}'. Clean: '${scoreTextClean}'. Parsé: ${score}.`);
                 
                 if (nom && !isNaN(score) && score !== 0) { // On ignore les scores à 0
