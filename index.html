@@ -717,9 +717,7 @@
             }
         }
 
-        // Nouvelle fonction pour analyser le CSV global
         function parseGlobalCSV(csv) {
-            // Garder les lignes qui ne sont pas vides
             const lines = csv.split('\n').filter(line => line.trim() !== '');
             const list = [];
             
@@ -736,30 +734,34 @@
             }
 
             dataLines.forEach((line, index) => {
-                // Utiliser une regex pour gérer les séparateurs, même dans les guillemets (plus robuste)
-                const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+                // SOLUTION: On utilise split(',') pour séparer les colonnes
+                const parts = line.split(',');
                 
-                // Vérifier si la ligne est assez longue
-                if (parts.length > SCORE_INDEX && parts[NAME_INDEX].trim() !== '') {
+                // Vérifier si la ligne est assez longue et si les colonnes critiques existent
+                // Nous vérifions si nous avons au moins 16 parties (index 15)
+                if (parts.length > SCORE_INDEX) {
                     
-                    const nom = parts[NAME_INDEX].trim().replace(/"/g, '');
-                    const classe = parts[CLASS_INDEX].trim().replace(/"/g, '');
-                    // Le score peut contenir des sauts de ligne ou des espaces, on nettoie
-                    const scoreText = parts[SCORE_INDEX].trim().replace(/"/g, '');
-                    const score = parseInt(scoreText, 10);
+                    // 1. Nettoyage et extraction des données
+                    const nom = parts[NAME_INDEX] ? parts[NAME_INDEX].trim().replace(/"/g, '') : '';
+                    const classe = parts[CLASS_INDEX] ? parts[CLASS_INDEX].trim().replace(/"/g, '') : '';
+                    // Le score peut être une chaîne comme "1565,6", il faut la nettoyer avant de la parser
+                    const scoreText = parts[SCORE_INDEX] ? parts[SCORE_INDEX].trim().replace(/"/g, '').replace(',', '.') : ''; 
+                    const score = parseFloat(scoreText); // Utilisation de parseFloat pour les décimaux
                     
-                    // On ne retient que les lignes avec un nom et un score valide
-                    if (nom && !isNaN(score)) {
+                    // console.log(`Debug Ligne ${index + 1}: Nom='${nom}', ScoreText='${scoreText}', Score=${score}`);
+                    
+                    // 2. Vérification de la validité
+                    if (nom && !isNaN(score) && score > 0) {
                         let li = document.createElement("li");
-                        li.innerHTML = `${index + 1}. ${nom} (${classe}) <span>${score}</span>`;
+                        // Affichage du score sans les décimales si possible, sinon avec une décimale
+                        const scoreDisplay = score % 1 === 0 ? score.toString() : score.toFixed(1);
+                        
+                        li.innerHTML = `${index + 1}. ${nom} (${classe}) <span>${scoreDisplay}</span>`;
                         
                         if (index < 3) {
                             li.classList.add('gold-score');
                         }
                         list.push(li);
-                    } else {
-                        // Ligne ignorée (vide ou score non numérique)
-                        // console.log(`Ligne ignorée : Rang ${index + 1}. Nom: ${nom}, Score brut: ${scoreText}`);
                     }
                 }
             });
