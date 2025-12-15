@@ -619,9 +619,11 @@
             "100": 77
         };
 
+        // --- NOUVEAUX ÉLÉMENTS POUR LE CLASSEMENT GLOBAL (Définitions) ---
         const GLOBAL_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT1neNKra59CewHg8kRJvnUNNiGW5_pat_SZF4_5xmhgpxn1st0A-Sk9mIUXu5YpRFVKcgf-E7eT47H/pub?gid=1245136924&single=true&output=csv';
-        let globalRankingData = [];
+        let globalRankingData = []; 
 
+        // Indices des colonnes (A=0, B=1, P=15)
         const NAME_INDEX = 0; 
         const CLASS_INDEX = 1;
         const SCORE_INDEX = 15;
@@ -717,13 +719,14 @@
 
         // Nouvelle fonction pour analyser le CSV global
         function parseGlobalCSV(csv) {
+            // Garder les lignes qui ne sont pas vides
             const lines = csv.split('\n').filter(line => line.trim() !== '');
             const list = [];
             
-            // Si la première ligne est un en-tête, nous la sautons.
-            // Sinon, nous commençons à l'index 0. 
-            // Nous allons supposer que la première ligne est l'en-tête et la sauter (slice(1)).
+            // On saute la première ligne (l'en-tête du tableau)
             const dataLines = lines.slice(1); 
+            
+            console.log("Total de lignes CSV à analyser (après en-tête):", dataLines.length);
             
             if (dataLines.length === 0) {
                  let li = document.createElement("li");
@@ -733,50 +736,63 @@
             }
 
             dataLines.forEach((line, index) => {
-                // Utiliser une expression régulière pour gérer les séparateurs à l'intérieur des guillemets
+                // Utiliser une regex pour gérer les séparateurs, même dans les guillemets (plus robuste)
                 const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
                 
-                // Vérifier si la ligne est assez longue et si les colonnes critiques existent
+                // Vérifier si la ligne est assez longue
                 if (parts.length > SCORE_INDEX && parts[NAME_INDEX].trim() !== '') {
                     
                     const nom = parts[NAME_INDEX].trim().replace(/"/g, '');
                     const classe = parts[CLASS_INDEX].trim().replace(/"/g, '');
-                    const score = parseInt(parts[SCORE_INDEX].trim(), 10);
+                    // Le score peut contenir des sauts de ligne ou des espaces, on nettoie
+                    const scoreText = parts[SCORE_INDEX].trim().replace(/"/g, '');
+                    const score = parseInt(scoreText, 10);
                     
                     // On ne retient que les lignes avec un nom et un score valide
                     if (nom && !isNaN(score)) {
-                        // Rang = index + 1 (puisque le sheet est classé)
                         let li = document.createElement("li");
-                        // Format : Rang. Nom (Classe) <span>Score</span>
                         li.innerHTML = `${index + 1}. ${nom} (${classe}) <span>${score}</span>`;
                         
-                        // Mettre en évidence le Top 3 en or
                         if (index < 3) {
                             li.classList.add('gold-score');
                         }
                         list.push(li);
+                    } else {
+                        // Ligne ignorée (vide ou score non numérique)
+                        // console.log(`Ligne ignorée : Rang ${index + 1}. Nom: ${nom}, Score brut: ${scoreText}`);
                     }
                 }
             });
+            console.log("Nombre d'éléments de classement global traités:", list.length);
             return list;
         }
 
         // Modification de loadRankings pour inclure le classement global
         async function loadRankings() {
+            console.log("Tentative de chargement du classement global...");
             // Chargement du classement global
             try {
                 const response = await fetch(GLOBAL_CSV_URL);
+                
+                if (!response.ok) {
+                     // Si la requête échoue pour une raison HTTP (404, 500, etc.)
+                     throw new Error(`Erreur HTTP lors du chargement: ${response.status}`);
+                }
+                
                 const csvText = await response.text();
+                // Afficher les 300 premiers caractères du CSV pour vérifier qu'il est chargé
+                console.log("CSV brut chargé (extrait):", csvText.substring(0, 300) + '...');
                 
                 // Stockage des éléments <li> générés par l'analyse
                 globalRankingData = parseGlobalCSV(csvText); 
+                
             } catch (error) {
-                console.error("Erreur de chargement du classement global :", error);
+                console.error("Erreur critique de chargement/parsing du classement global :", error);
                 let li = document.createElement("li");
-                li.textContent = "Erreur de chargement du classement. (Problème de réseau ou URL)";
+                li.textContent = "Erreur de chargement du classement. (Problème de réseau, voir console)";
                 globalRankingData = [li];
             }
-            // Le reste de votre logique de démarrage peut rester ici si besoin
+            // Assurez-vous d'appeler generateGrid ici
             generateGrid();
         }
 
