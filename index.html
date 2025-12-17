@@ -358,6 +358,7 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
             z-index: 1999;
+            backdrop-filter: blur(2px); /* Optionnel : léger flou derrière */
         }
         .confetti {
             position: fixed;
@@ -389,18 +390,20 @@
         }
         /* Centrage du modal global et style amélioré */
         #globalRankingModal {
+            display: none;
+            position: fixed; 
             top: 50% !important; 
             left: 50% !important; 
-            right: initial !important;
             transform: translate(-50%, -50%) !important; 
-            width: 80vw;
-            max-width: 900px; /* Taille plus large */
-            max-height: 85vh; /* Moins haut */
+            width: 90% !important; /* Pourcentage de la largeur */
+            max-width: 800px; 
+            height: 85% !important; /* Pourcentage de la hauteur */
+            background: #171717;
             padding: 20px;
-            border: 1px solid #444;
-            position: fixed; 
-            z-index: 2000; /* Assure qu'il est au-dessus du jeu */
-            overflow-y: auto; /* Permet le défilement dans le modal */
+            border-radius: 20px;
+            z-index: 2000; 
+            overflow-y: auto; 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
         }
 
         #globalRankingModal h3 {
@@ -408,6 +411,7 @@
             margin-bottom: 25px !important;
             color: #D4AF37;
             text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+            text-align: center;
         }
 
         #globalRankingModal ul {
@@ -417,26 +421,33 @@
             flex-direction: column;
             gap: 12px; /* Espace entre les entrées */
         }
-        /* Style du bouton Fermer (X) */
+
+        /* --- NOUVEAU STYLE POUR LA CROIX SVG --- */
         .close-btn {
             position: absolute;
-            top: 10px;
+            top: 15px;
             right: 15px;
             background: none;
             border: none;
-            color: white;
-            font-size: 30px; /* Plus grand */
-            font-weight: bold;
             cursor: pointer;
-            padding: 5px 10px;
-            line-height: 1;
+            padding: 5px;
             z-index: 2001;
-            opacity: 0.6;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .close-btn:hover {
-            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .close-btn svg {
+            width: 32px;
+            height: 32px;
+            stroke: #fff;
+            stroke-width: 2.5;
+            stroke-linecap: round;
         }
 
         /* Style de chaque entrée du classement */
@@ -584,6 +595,7 @@
     <div class="selected-numbers" id="selectedNumbers"></div>
     
     <div class="overlay" id="overlay"></div>
+
     <div class="game-over-modal" id="gameOverModal">
         <h2 id="modalTitle">Partie terminée !</h2>
         <p id="modalMessage"></p>
@@ -608,7 +620,12 @@
     <button class="global-ranking-btn" onclick="toggleGlobalModal()">🏆 Global</button>
 
     <div id="globalRankingModal" class="modal" style="top: 50%; transform: translateY(-50%); left: 50%;"> 
-        <button class="close-btn" onclick="toggleGlobalModal()">X</button> <h3 style="margin-bottom: 15px; text-align: center;">🏆 Classement Global (Cumulé)</h3>
+        <button class="close-btn" onclick="toggleGlobalModal()">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" />
+            </svg>
+        </button>
+        <h3>🏆 Classement Global (Cumulé)</h3>
         <ul id="globalRankingList"></ul>
     </div>
 
@@ -769,7 +786,6 @@
         // Indices des colonnes (A=0, B=1)
         const NAME_INDEX = 0; 
         const CLASS_INDEX = 1;
-        // Index 15 = Colonne P (selon votre confirmation)
         const CUMULATIVE_SCORE_INDEX = 15;
 
         // REGEX pour extraire la colonne 15 :
@@ -801,6 +817,7 @@
             document.getElementById("overlay").style.display = "none";
             document.getElementById("globalRankingModal").style.display = "none";
             document.getElementById("rankingModal").style.display = "none";
+            document.getElementById("gameOverModal").style.display = "none";
         }
 
         function copySequence() {
@@ -854,6 +871,7 @@
 
         function toggleGlobalModal() {
             const modal = document.getElementById("globalRankingModal");
+            const overlay = document.getElementById("overlay");
             const rankingList = document.getElementById("globalRankingList");
 
             if (modal.style.display === "block") {
@@ -867,6 +885,7 @@
                 globalRankingData.forEach(li => rankingList.appendChild(li.cloneNode(true)));
                 
                 modal.style.display = "block";
+                overlay.style.display = "block"; // Affiche l'overlay pour bloquer le jeu
             }
         }
 
