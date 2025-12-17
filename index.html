@@ -466,11 +466,32 @@
             justify-content: flex-start !important; /* Alignement à gauche */
             align-items: center;
             background-color: #2b2b2b;
-            padding: 9px;
+            padding: 6px;
             border-radius: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        /* On s'assure que les styles par défaut (4+) sont plus petits */
+        .ranking-entry .rank-badge {
+            font-size: 18px; /* Numéro plus petit */
+            min-width: 40px;
+        }
+
+        .ranking-entry .rank-name {
+            font-size: 16px; /* Texte nom réduit */
+        }
+
+        .ranking-entry .rank-class {
+            font-size: 12px; /* Texte classe réduit */
+            text-align: left !important; /* Force l'alignement à gauche */
+            align-self: flex-start; /* Aligne le bloc lui-même à gauche */
+        }
+
+        .ranking-entry .score-value {
+            font-size: 18px; /* Score réduit */
+            color: #ffffff; /* Score en blanc pour les classés 4+ */
         }
 
         .ranking-entry:hover {
@@ -499,6 +520,7 @@
             flex-direction: column;
             align-items: flex-start !important;
             text-align: left !important;
+            flex-grow: 1;
         }
 
         .rank-name {
@@ -535,33 +557,30 @@
             font-weight: normal;
         }
 
-        /* --- LE PREMIER --- */
+        /* LE PREMIER */
         .ranking-entry:nth-child(1) {
+            padding: 20px;
             background-color: #332e1c;
             border: 1px solid #D4AF37;
-            padding: 20px; /* Padding spécifique pour le 1er */
+        }
+        .ranking-entry:nth-child(1) .rank-badge { font-size: 26px; }
+        .ranking-entry:nth-child(1) .rank-name { font-size: 26px; }
+        .ranking-entry:nth-child(1) .score-value { 
+            font-size: 32px; 
+            color: #D4AF37 !important; /* Garde le score doré pour le 1er */
         }
 
-        /* --- LE DEUXIÈME ET TROISIÈME --- */
+        /* LE 2ème ET 3ème */
         .ranking-entry:nth-child(2),
         .ranking-entry:nth-child(3) {
-            padding: 14px; /* Padding spécifique pour 2ème et 3ème */
+            padding: 14px;
         }
-
-        /* --- DORÉ POUR LE PREMIER (Texte et Score) --- */
-        .ranking-entry:nth-child(1) .rank-badge,
-        .ranking-entry:nth-child(1) .rank-name,
-        .ranking-entry:nth-child(1) .rank-class,
-        .ranking-entry:nth-child(1) .score-value {
-            color: #D4AF37 !important;
-        }
-
-        .ranking-entry:nth-child(1) .rank-name {
-            font-size: 26px; /* Plus grand pour le 1er */
-        }
-
-        .ranking-entry:nth-child(1) .score-value {
-            font-size: 32px; /* Plus grand pour le 1er */
+        .ranking-entry:nth-child(2) .rank-name, 
+        .ranking-entry:nth-child(3) .rank-name { font-size: 22px; }
+        .ranking-entry:nth-child(2) .score-value, 
+        .ranking-entry:nth-child(3) .score-value { 
+            font-size: 26px; 
+            color: #69F0AE; /* Garde le score vert pour le podium 2 et 3 */
         }
 
     </style>
