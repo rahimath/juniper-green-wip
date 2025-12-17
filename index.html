@@ -409,9 +409,10 @@
         #globalRankingModal h3 {
             font-size: 26px;
             margin-top: 10px;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             /* text-shadow: 0 0 5px rgba(212, 175, 55, 0.5); */
             text-align: center;
+            font-weight: bold;
         }
 
         #globalRankingModal ul {
@@ -456,7 +457,7 @@
             justify-content: flex-start !important; /* Alignement à gauche */
             align-items: center;
             background-color: #2b2b2b;
-            padding: 15px;
+            padding: 18px;
             border-radius: 12px;
             margin-bottom: 12px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -469,9 +470,9 @@
         }
 
         .rank-badge {
-            font-size: 22px;
+            font-size: 26px;
             font-weight: bold;
-            min-width: 40px;
+            min-width: 50px;
             text-align: center;
             color: #ccc;
         }
@@ -481,26 +482,30 @@
             justify-content: space-between;
             align-items: center;
             flex-grow: 1;
-            margin-left: 15px;
+            margin-left: 20px;
         }
 
         .name-class {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            text-align: left;
+            align-items: flex-start !important;
+            text-align: left !important;
         }
 
         .rank-name {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
+            display: block;
+            width: 100%;
         }
 
         .rank-class {
-            font-size: 14px;
+            font-size: 15px;
             color: #999;
-            margin-top: 2px;
-            ont-weight: normal;
+            margin-top: 4px;
+            font-weight: normal;
+            display: block;
+            width: 100%;
         }
 
         .rank-score {
@@ -510,28 +515,37 @@
         }
 
         .score-value {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 700;
             color: #69F0AE; /* Couleur vive pour les scores */
         }
 
         .score-unit {
-            font-size: 12px;
+            font-size: 13px;
             color: #999;
             font-weight: normal;
         }
 
-        /* Style spécifique pour le numéro 1 */
-        .ranking-entry:first-child .rank-badge {
-            color: #D4AF37; /* Doré */
-            font-size: 32px; /* Plus gros */
+        /* --- STYLE SPÉCIFIQUE POUR LE 1er --- */
+        .ranking-entry:first-child {
+            background-color: #332e1c; /* Fond légèrement plus chaud pour le 1er */
+            border: 1px solid #D4AF37;
+            padding: 25px; /* Cadre plus grand pour le 1er */
         }
 
-        /* Styles spéciaux pour le Top 3 */
-        .ranking-entry.top-three {
-            background: #2b2b2b;
-            border: none;
-            box-shadow: none;
+        .ranking-entry:first-child .rank-badge,
+        .ranking-entry:first-child .rank-name,
+        .ranking-entry:first-child .rank-class,
+        .ranking-entry:first-child .score-value {
+            color: #D4AF37 !important; /* Tout en doré pour le 1er */
+        }
+
+        .ranking-entry:first-child .rank-name {
+            font-size: 26px; /* Nom plus grand pour le 1er */
+        }
+
+        .ranking-entry:first-child .score-value {
+            font-size: 32px; /* Score plus grand pour le 1er */
         }
 
     </style>
@@ -947,7 +961,7 @@
                 li.setAttribute('data-rank', rang);
                 
                 li.innerHTML = `
-                    <div class="rank-badge">${badge}</div>
+                    <div class="rank-badge">${rang}</div>
                     <div class="info-group">
                         <div class="name-class">
                             <span class="rank-name">${data.nom}</span>
