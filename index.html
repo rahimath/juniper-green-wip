@@ -471,7 +471,7 @@
         .rank-badge {
             font-size: 22px;
             font-weight: bold;
-            min-width: 40px; /* Espace pour le badge/rang */
+            min-width: 40px;
             text-align: center;
             color: #ccc;
         }
@@ -488,10 +488,11 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            text-align: left;
         }
 
         .rank-name {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
         }
 
@@ -499,6 +500,7 @@
             font-size: 14px;
             color: #999;
             margin-top: 2px;
+            ont-weight: normal;
         }
 
         .rank-score {
@@ -516,33 +518,22 @@
         .score-unit {
             font-size: 12px;
             color: #999;
+            font-weight: normal;
+        }
+
+        /* Style spécifique pour le numéro 1 */
+        .ranking-entry:first-child .rank-badge {
+            color: #D4AF37; /* Doré */
+            font-size: 32px; /* Plus gros */
         }
 
         /* Styles spéciaux pour le Top 3 */
         .ranking-entry.top-three {
-            background: linear-gradient(90deg, #3a3a3a, #443c2c);
-            border: 1px solid #D4AF37;
-            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+            background: #2b2b2b;
+            border: none;
+            box-shadow: none;
         }
 
-        .ranking-entry.top-three .rank-badge {
-            font-size: 28px;
-        }
-
-        .ranking-entry.top-three .score-value {
-            color: #FFEB3B; /* Or pour le score du Top 3 */
-        }
-
-        /* Style pour Mme Butin (Professeur) */
-        .ranking-entry.teacher-entry {
-            opacity: 0.7;
-            font-style: italic;
-            background-color: #383838;
-        }
-
-        .ranking-entry.teacher-entry .score-value {
-            color: #81D4FA; /* Bleu pour les professeurs, par exemple */
-        }
     </style>
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-3N5SVBSN6Q"></script>
@@ -945,7 +936,7 @@
             const list = [];
             extractedData.forEach((data, index) => {
                 const rang = index + 1;
-                const badge = rang === 1 ? '🏆' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang;
+                const badge = rang;
                 
                 const scoreValue = data.score;
                 // AFFICHAGE : Affiche un chiffre après la virgule si nécessaire, sinon affiche l'entier.
