@@ -1181,9 +1181,18 @@
 
         window.addEventListener("DOMContentLoaded", () => {
             const select = document.getElementById("numberCount");
+            const overlay = document.getElementById("overlay");
             
             const savedVersion = localStorage.getItem("gameVersion");
             if (savedVersion && select) select.value = savedVersion;
+
+            // Ferme tout quand on clique sur l'ombre derrière le classement
+            overlay.addEventListener('click', () => {
+                const globalModal = document.getElementById("globalRankingModal");
+                if (globalModal.style.display === "block") {
+                    closeAllModals(); 
+                }
+            });
             
             loadRankings(); 
             
